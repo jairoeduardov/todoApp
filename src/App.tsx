@@ -1,11 +1,13 @@
-import GoogleAuth from "./auth/GoogleAuth"
+import { Typography } from "@mui/material"
 
 function App() {
   return (
-    <h1>
-      <GoogleAuth />
+    <>
+     <Typography variant="h1" component="h2">
+  HOla
+</Typography>
    
-    </h1>
+    </>
   )
 }
 

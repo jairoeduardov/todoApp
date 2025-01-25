@@ -7,16 +7,20 @@ export interface User {
 }
 
 export interface AuthContextType {
+    isAuthenticated: boolean;
     token: string | null;
-    user: User | null;
-    login: (token: string, user: User) => void;
+    user: GoogleUser | null;
+    login: (token: string, user: GoogleUser) => void;
     logout: () => void;
 }
 
 
-export interface GoogleUser {
-    email: string;
-    name: string;
+export interface GoogleUser {   
+    sub: string; // ID único del usuario
+    name: string; // Nombre completo
+    username:string;
+    given_name: string; // Primer nombre
+    family_name: string; // Apellido
+    email: string; // Correo electrónico
     picture: string;
-    sub: string; // ID único de Google
   }

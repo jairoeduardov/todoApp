@@ -1,46 +1,25 @@
-import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
-import { useAuth } from '../context/AuthContext';
-import { GoogleUser, User } from '../types/auth';
+import { useNavigate } from 'react-router-dom';
 
-const GoogleAuth = () => {
+const GoogleAuth: React.FC = () => {
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  console.log('Google Client ID:', clientId);
+  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+  //console.log('Google Client ID:', clientId);
+  //console.log('redirectUri', redirectUri)
 
-  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSuccess = (credentialResponse: CredentialResponse) => {
-    if (credentialResponse.credential) {
-      const decoded = jwtDecode<GoogleUser>(credentialResponse.credential);
-
-      // Mapea los datos para el formato esperado en tu contexto
-      const user: User = {
-        uuid: decoded.sub, // ID único proporcionado por Google
-        username: decoded.email.split('@')[0], //Se usa el correo como username
-        email: decoded.email,
-        name: decoded.name,
-        firstName: decoded.name.split(' ')[0], // Primer nombre
-      };
-
-      login(credentialResponse.credential, user); // Actualiza el contexto con los datos del usuario
-    } else {
-      console.error('La respuesta no contiene credencial');
-    }
-  };
-
-  const handleError = () => {
-    console.log('Error en la autenticación');
+  const handleLogin = () => {
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=email profile&include_granted_scopes=true`;    
+    window.location.href = authUrl;
   };
 
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={handleError}
-      />
-    </GoogleOAuthProvider>
+    <button onClick={handleLogin}>
+      Iniciar sesión con Google
+    </button>
   );
+
 };
 
 export default GoogleAuth;
