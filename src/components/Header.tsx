@@ -22,7 +22,7 @@ const Header: React.FC = () => {
         </Typography>
         <Box>
           <Button color="inherit" onClick={handleLogout}>
-            Logout
+            Salir
           </Button>
         </Box>
       </Toolbar>

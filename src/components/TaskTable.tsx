@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -8,127 +8,126 @@ import {
   TableRow,
   Paper,
   Chip,
-  Button,
+  IconButton,
 } from '@mui/material';
 import { Task, TaskStatus } from '../types/api/task';
-import { getStatusChipColor, getPriorityChipColor, getStatusLabel, getPriorityLabel } from '../utils/taskHelpers';
-import axios from 'axios';
+import {
+  getStatusChipColor,
+  getPriorityChipColor,
+  getStatusLabel,
+  getPriorityLabel,
+} from '../utils/taskHelpers';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ConfirmDialog from './ConfirmDialog';
+import useDeleteTask from '../hooks/useDeleteTask'; // Hook personalizado para eliminar
+import useUpdateTask from '../hooks/useUpdateTask'; // Hook personalizado para actualizar
 
 interface TaskTableProps {
   tasks: Task[];
-  onUpdateTask: (updatedTask: Task) => void; // Callback para actualizar el estado local
-  onDeleteTask: (taskId: string) => void; // Callback para eliminar la tarea del estado local
-
+  onUpdateTask: (updatedTask: Task) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
 const TaskTable: React.FC<TaskTableProps> = ({ tasks, onUpdateTask, onDeleteTask }) => {
-  // Función para marcar una tarea como completada
+  const { deleteTask } = useDeleteTask();
+  const { updateTask } = useUpdateTask();
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const handleDeleteTask = async () => {
+    if (!selectedTaskId) return;
+
+    const success = await deleteTask(selectedTaskId);
+    if (success) {
+      onDeleteTask(selectedTaskId); // Actualizar el estado local
+    }
+
+    setConfirmDialogOpen(false);
+    setSelectedTaskId(null);
+  };
+
   const handleMarkAsCompleted = async (task: Task) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token is missing.');
-      }
+    const updatedTask = { ...task, status: TaskStatus.COMPLETED };
 
-      const updatedTask = {
-        ...task,
-        status: 'COMPLETED', // Cambiar el estado a COMPLETED
-      };
-
-      // Llamada al backend
-      const response = await axios.put(
-        `http://localhost:8082/todo/api/v1/tasks/${task.uuid}`,
-        { data: updatedTask },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Actualizar el estado local con la tarea actualizada
-      onUpdateTask(response.data.data);
-    } catch (err) {
-      console.error('Error updating task:', err);
+    const result = await updateTask(updatedTask);
+    if (result) {
+      onUpdateTask(result); // Actualizar el estado local con la tarea actualizada
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token is missing.');
-      }
-
-      // Llamada al backend para eliminar la tarea
-      await axios.delete(`http://localhost:8082/todo/api/v1/tasks/${taskId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Actualizar el estado local eliminando la tarea
-      onDeleteTask(taskId);
-    } catch (err) {
-      console.error('Error deleting task:', err);
-    }
+  const openConfirmDialog = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setConfirmDialogOpen(true);
   };
 
   return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Título</TableCell>
-            <TableCell>Descripción</TableCell>
-            <TableCell>Estado</TableCell>
-            <TableCell>Prioridad</TableCell>
-            <TableCell>Fecha de Vencimiento</TableCell>
-            <TableCell>Acciones</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {tasks && tasks.map((task) => (
-            <TableRow key={task.uuid}>
-              <TableCell>{task.title}</TableCell>
-              <TableCell>{task.description}</TableCell>
-              <TableCell>
-                <Chip
-                  label={getStatusLabel(task.status) }
-                  color={  getStatusChipColor(task.status) }
-                />
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={getPriorityLabel(task.priority)}
-                  color={getPriorityChipColor(task.priority)}
-                />
-              </TableCell>
-              <TableCell>{new Date(task.dueDate).toLocaleString()}</TableCell>
-              <TableCell>
-                {task.status !== TaskStatus.COMPLETED && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleMarkAsCompleted(task)}
-                  >
-                    Marcar como Completada
-                  </Button>
-                )}
-                <Button
-                    variant="contained"
+    <>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Título</TableCell>
+              <TableCell>Descripción</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell>Prioridad</TableCell>
+              <TableCell>Fecha de Vencimiento</TableCell>
+              <TableCell>Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {tasks.map((task) => (
+              <TableRow key={task.uuid}>
+                <TableCell>{task.title}</TableCell>
+                <TableCell>{task.description}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={getStatusLabel(task.status)}
+                    color={getStatusChipColor(task.status)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={getPriorityLabel(task.priority)}
+                    color={getPriorityChipColor(task.priority)}
+                  />
+                </TableCell>
+                <TableCell>{new Date(task.dueDate).toLocaleString()}</TableCell>
+                <TableCell>
+                  {task.status !== TaskStatus.COMPLETED && (
+                    <IconButton
+                      color="success"
+                      size="small"
+                      onClick={() => handleMarkAsCompleted(task)}
+                      aria-label="Completar tarea"
+                    >
+                      <CheckCircleIcon />
+                    </IconButton>
+                  )}
+                  <IconButton
                     color="error"
                     size="small"
-                    onClick={() => handleDeleteTask(task.uuid)}
+                    onClick={() => openConfirmDialog(task.uuid)} // Abre el diálogo de confirmación
+                    aria-label="Eliminar tarea"
                   >
-                    Eliminar
-                  </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                    <CancelIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Diálogo de confirmación */}
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        title="Confirmar Eliminación"
+        message="¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer."
+        onConfirm={handleDeleteTask}
+        onClose={() => setConfirmDialogOpen(false)}
+      />
+    </>
   );
 };
 
