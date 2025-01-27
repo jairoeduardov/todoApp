@@ -18,7 +18,7 @@ const Header: React.FC = () => {
     <AppBar position="static" sx={{ bgcolor: '#1976d2' }}>
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Mi Aplicación
+          To Do App
         </Typography>
         <Box>
           <Button color="inherit" onClick={handleLogout}>

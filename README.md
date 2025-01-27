@@ -103,25 +103,11 @@ npm run preview
 - [Material-UI](https://mui.com/): Componentes estilizados para React.
 - [@react-oauth/google](https://www.npmjs.com/package/@react-oauth/google): Manejo de OAuth para Google.
 
-## **Contribuciones**
-
-¡Contribuciones son bienvenidas! Para colaborar:
-
-1. Crea un fork del repositorio.
-2. Crea una rama nueva: `git checkout -b mi-rama-nueva`.
-3. Realiza tus cambios y haz un commit: `git commit -m "Descripción de los cambios"`.
-4. Haz push a la rama: `git push origin mi-rama-nueva`.
-5. Abre un Pull Request.
-
-## **Licencia**
-
-Este proyecto está bajo la licencia MIT. Consulta el archivo `LICENSE` para más detalles.
-
 ---
 
 ## **Contacto**
 
 Si tienes preguntas o sugerencias, no dudes en contactarme:
 
-- **Autor**: [Tu Nombre](https://github.com/jairoeduardov)
+- **Autor**: [Jairo Vides](https://github.com/jairoeduardov)
 - **Email**: jairoeduardov@gmail.com
