@@ -1,48 +1,58 @@
-import { CredentialResponse, GoogleLogin, googleLogout } from '@react-oauth/google';
-import React from 'react'
-import { jwtDecode } from "jwt-decode"
+import React from 'react';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Asegúrate de tener un contexto de autenticación
-import { GoogleUser, User } from '../types/auth';
+import { jwtDecode } from 'jwt-decode';
+import { useAuth } from '../context/AuthContext';
+import { GoogleUser } from '../types/auth';
+import { Box, Typography, Card, CardContent } from '@mui/material';
 
 export const Landing: React.FC = () => {
-
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  function handleLogout() {
-    googleLogout();
-  }
-
   const handleSuccess = (credentialResponse: CredentialResponse) => {
-
     if (credentialResponse.credential) {
       const token = credentialResponse.credential;
       const decoded = jwtDecode<GoogleUser>(credentialResponse.credential);
       const user: GoogleUser = {
-        sub: decoded.sub, // ID único proporcionado por Google
-        username: decoded.email.split('@')[0], // Usa el correo como username
+        sub: decoded.sub,
+        username: decoded.email.split('@')[0],
         email: decoded.email,
         name: decoded.name,
-        given_name: decoded.given_name, // Primer nombre
-        family_name: decoded.family_name, // Apellido
-        picture: decoded.picture, // URL de la foto de perfil
+        given_name: decoded.given_name,
+        family_name: decoded.family_name,
+        picture: decoded.picture,
       };
-      login(token, user); // Actualiza el estado de autenticación
-      navigate('/dashboard'); // Redirige al usuario a la ruta protegida
-
+      login(token, user);
+      navigate('/dashboard');
     }
   };
 
-
-
   return (
-    <>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={() => console.log("login failed")}
-        auto_select={true} />
-
-    </>
-  )
-}
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="100vh"
+      bgcolor="#f5f5f5"
+    >
+      <Card sx={{ width: 400, padding: 2, borderRadius: 4, boxShadow: 3 }}>
+        <CardContent>
+          <Typography variant="h4" component="h1" textAlign="center" gutterBottom>
+            Bienvenido a To Do
+          </Typography>
+          <Typography variant="body1" textAlign="center" color="text.secondary" gutterBottom>
+            Inicia sesión con tu cuenta de Google para acceder a la plataforma.
+          </Typography>
+          <Box display="flex" justifyContent="center" mt={2}>
+            <GoogleLogin
+              onSuccess={handleSuccess}
+              onError={() => console.log('Error al iniciar sesión')}
+              auto_select={true}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+};

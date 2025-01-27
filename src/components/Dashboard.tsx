@@ -1,92 +1,79 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Typography,
-  Chip,
-  Paper,
+  IconButton,
+  Button,
   CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {  TaskStatus, TaskPriority, TaskListResponse, TaskList } from '../types/api/task';
-import axios from 'axios';
-import { GoogleUser } from '../types/auth';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'; // Ícono para añadir tareas
 
+import TaskTable from './TaskTable';
+import { useFetchTasks } from '../hooks/useFetchTasks';
+import AddTaskForm from './AddTaskForm';
+import AddTaskListForm from './AddTaskListForm';
+import Header from './Header';
 
 const Dashboard: React.FC = () => {
+  const { taskLists, loading, error, setTaskLists } = useFetchTasks();
+  const [openModal, setOpenModal] = useState(false);
+  const [openTaskListModal, setOpenTaskListModal] = useState(false); // Nuevo modal para TaskList
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
-
-  const [taskLists, setTaskLists] = useState<TaskList[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-
-  const getStatusChipColor = (status: TaskStatus) => {
-    switch (status) {
-      case TaskStatus.PENDING:
-        return 'warning';
-      case TaskStatus.IN_PROGRESS:
-        return 'info';
-      case TaskStatus.COMPLETED:
-        return 'success';
-      default:
-        return 'default';
-    }
+  const handleOpenModal = (listId: string) => {
+    setSelectedListId(listId);
+    setOpenModal(true);
   };
 
-  const getPriorityChipColor = (priority: TaskPriority) => {
-    switch (priority) {
-      case TaskPriority.LOW:
-        return 'default';
-      case TaskPriority.MEDIUM:
-        return 'primary';
-      case TaskPriority.HIGH:
-        return 'error';
-      default:
-        return 'default';
-    }
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setSelectedListId(null);
   };
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const handleAddTask = (listId: string, newTask: any) => {
+    setTaskLists((prevTaskLists) =>
+      prevTaskLists.map((list) =>
+        list.uuid === listId
+          ? {
+              ...list,
+              tasks: [...list.tasks, newTask],
+            }
+          : list
+      )
+    );
+  };
 
-        // Obtén el token de Google (asegúrate de haber autenticado al usuario antes).
-        const token = localStorage.getItem('token');
-        const user:GoogleUser = JSON.parse(localStorage.getItem('user') || 'null');
-        if (!token) {
-          throw new Error('No Google authentication token found.');
-        }
-        
-        const response = await axios.get<TaskListResponse>(
-          `http://localhost:8082/todo/api/v1/users/${user.sub}/task-lists`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        //console.log(response.data);
-        setTaskLists(response.data.data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch tasks');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleAddTaskList = (newTaskList: any) => {
+    setTaskLists((prevTaskLists) => [...prevTaskLists, newTaskList]);
+  };
 
-    fetchTasks();
-  }, []);
+  const handleUpdateTask = (updatedTask: any) => {
+    setTaskLists((prevTaskLists) =>
+      prevTaskLists.map((list) =>
+        list.uuid === updatedTask.taskList.uuid
+          ? {
+              ...list,
+              tasks: list.tasks.map((task) =>
+                task.uuid === updatedTask.uuid ? updatedTask : task
+              ),
+            }
+          : list
+      )
+    );
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTaskLists((prevTaskLists) =>
+      prevTaskLists.map((list) => ({
+        ...list,
+        tasks: list.tasks.filter((task) => task.uuid !== taskId),
+      }))
+    );
+  };
 
   if (loading) {
     return (
@@ -105,60 +92,67 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ padding: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Lista de tareas
-      </Typography>
-      
-      {taskLists.map((list, index) => (
-        <Accordion key={index}>
+    <>
+      <Header />
+      <Box sx={{ padding: 4 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Typography variant="h4">Lista de Tareas</Typography>
+        <IconButton
+            color="primary"
+            onClick={() => setOpenTaskListModal(true)}
+            aria-label="Crear Nueva Lista"
+          >
+            <AddCircleOutlineIcon />
+          </IconButton>
+      </Box>
+
+      {taskLists.map((list) => (
+        <Accordion key={list.uuid}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">{list.name}</Typography>
-            <Typography sx={{ marginLeft: 2, color: 'text.secondary' }}>
+          <Box>
+            <Typography variant="h5" component="div">{list.name}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }} >
               {list.description}
             </Typography>
+          </Box>
           </AccordionSummary>
           <AccordionDetails>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Titulo</TableCell>
-                    <TableCell>Descripcion</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell>Prioridad</TableCell>
-                    <TableCell>Fecha de Vencimiento</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                {list.tasks.map((task, taskIndex) => (
-                    <TableRow key={taskIndex}>
-                      <TableCell>{task.title}</TableCell>
-                      <TableCell>{task.description}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={task.status}
-                          color={getStatusChipColor(task.status)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={task.priority}
-                          color={getPriorityChipColor(task.priority)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {new Date(task.dueDate).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+
+          <IconButton
+            color="primary"
+            onClick={() => handleOpenModal(list.uuid)}
+            aria-label="Crear Nueva Lista"
+          >
+            <AddCircleOutlineIcon />
+          </IconButton>
+
+            
+            <TaskTable
+              tasks={Array.isArray(list.tasks) ? list.tasks : []} 
+              onUpdateTask={handleUpdateTask}
+              onDeleteTask={handleDeleteTask}
+            />
           </AccordionDetails>
         </Accordion>
       ))}
+
+      {selectedListId && (
+        <AddTaskForm
+          listId={selectedListId}
+          onAddTask={handleAddTask}
+          open={openModal}
+          onClose={handleCloseModal}
+        />
+      )}
+
+      <AddTaskListForm
+        open={openTaskListModal}
+        onClose={() => setOpenTaskListModal(false)}
+        onAddTaskList={handleAddTaskList}
+      />
     </Box>
+    </>
+    
   );
 };
 
